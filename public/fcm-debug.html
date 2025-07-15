@@ -1,0 +1,213 @@
+<!-- FCM Notification Debug Helper -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FCM Notification Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .debug-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .success { color: green; }
+        .error { color: red; }
+        .warning { color: orange; }
+        button { margin: 5px; padding: 10px 15px; }
+        .log { background: #f5f5f5; padding: 10px; margin: 10px 0; height: 200px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔍 FCM Notification Debug Helper</h1>
+    
+    <div class="debug-section">
+        <h2>📋 Step 1: Check Browser Support</h2>
+        <button onclick="checkBrowserSupport()">Check Browser Support</button>
+        <div id="browser-support"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>🔔 Step 2: Check Notification Permission</h2>
+        <button onclick="checkNotificationPermission()">Check Permission</button>
+        <button onclick="requestNotificationPermission()">Request Permission</button>
+        <div id="notification-permission"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>⚙️ Step 3: Test Service Worker</h2>
+        <button onclick="testServiceWorker()">Test Service Worker</button>
+        <div id="service-worker-status"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>🧪 Step 4: Test Notifications</h2>
+        <button onclick="testBasicNotification()">Test Basic Notification</button>
+        <button onclick="testServiceWorkerNotification()">Test SW Notification</button>
+        <div id="notification-test"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>📊 Debug Logs</h2>
+        <button onclick="clearLogs()">Clear Logs</button>
+        <div id="debug-logs" class="log"></div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const timestamp = new Date().toISOString();
+            const logEntry = `[${timestamp}] ${message}`;
+            console.log(logEntry);
+            
+            const logsDiv = document.getElementById('debug-logs');
+            const logElement = document.createElement('div');
+            logElement.className = type;
+            logElement.textContent = logEntry;
+            logsDiv.appendChild(logElement);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+
+        function clearLogs() {
+            document.getElementById('debug-logs').innerHTML = '';
+        }
+
+        function checkBrowserSupport() {
+            const support = {
+                notifications: 'Notification' in window,
+                serviceWorker: 'serviceWorker' in navigator,
+                pushManager: 'PushManager' in window,
+                userAgent: navigator.userAgent
+            };
+            
+            log('🌐 Browser Support Check:', 'info');
+            log(`- Notifications: ${support.notifications}`, support.notifications ? 'success' : 'error');
+            log(`- Service Worker: ${support.serviceWorker}`, support.serviceWorker ? 'success' : 'error');
+            log(`- Push Manager: ${support.pushManager}`, support.pushManager ? 'success' : 'error');
+            log(`- User Agent: ${support.userAgent}`, 'info');
+            
+            document.getElementById('browser-support').innerHTML = `
+                <div class="${support.notifications ? 'success' : 'error'}">Notifications: ${support.notifications}</div>
+                <div class="${support.serviceWorker ? 'success' : 'error'}">Service Worker: ${support.serviceWorker}</div>
+                <div class="${support.pushManager ? 'success' : 'error'}">Push Manager: ${support.pushManager}</div>
+            `;
+        }
+
+        function checkNotificationPermission() {
+            if (!('Notification' in window)) {
+                log('❌ Notifications not supported', 'error');
+                return;
+            }
+            
+            const permission = Notification.permission;
+            log(`🔔 Notification Permission: ${permission}`, permission === 'granted' ? 'success' : 'warning');
+            
+            document.getElementById('notification-permission').innerHTML = `
+                <div class="${permission === 'granted' ? 'success' : 'warning'}">
+                    Permission: ${permission}
+                </div>
+            `;
+        }
+
+        async function requestNotificationPermission() {
+            if (!('Notification' in window)) {
+                log('❌ Notifications not supported', 'error');
+                return;
+            }
+            
+            try {
+                const permission = await Notification.requestPermission();
+                log(`🔔 Permission requested: ${permission}`, permission === 'granted' ? 'success' : 'warning');
+                checkNotificationPermission();
+            } catch (error) {
+                log(`❌ Permission request failed: ${error}`, 'error');
+            }
+        }
+
+        async function testServiceWorker() {
+            if (!('serviceWorker' in navigator)) {
+                log('❌ Service Worker not supported', 'error');
+                return;
+            }
+            
+            try {
+                const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+                log('✅ Service Worker registered successfully', 'success');
+                
+                if (registration.active) {
+                    log('✅ Service Worker is active', 'success');
+                } else {
+                    log('⚠️ Service Worker is installing...', 'warning');
+                }
+                
+                document.getElementById('service-worker-status').innerHTML = `
+                    <div class="success">Service Worker: Registered</div>
+                    <div class="${registration.active ? 'success' : 'warning'}">
+                        Status: ${registration.active ? 'Active' : 'Installing'}
+                    </div>
+                `;
+            } catch (error) {
+                log(`❌ Service Worker registration failed: ${error}`, 'error');
+                document.getElementById('service-worker-status').innerHTML = `
+                    <div class="error">Service Worker: Failed</div>
+                `;
+            }
+        }
+
+        async function testBasicNotification() {
+            if (Notification.permission !== 'granted') {
+                log('❌ Notification permission not granted', 'error');
+                return;
+            }
+            
+            try {
+                const notification = new Notification('🧪 Test Basic Notification', {
+                    body: 'This is a test notification from the debug helper',
+                    icon: '/favicon.ico',
+                    tag: 'test-basic-notification',
+                    requireInteraction: true
+                });
+                
+                notification.onclick = () => {
+                    log('📱 Basic notification clicked', 'success');
+                    notification.close();
+                };
+                
+                log('✅ Basic notification shown', 'success');
+            } catch (error) {
+                log(`❌ Basic notification failed: ${error}`, 'error');
+            }
+        }
+
+        async function testServiceWorkerNotification() {
+            if (!('serviceWorker' in navigator)) {
+                log('❌ Service Worker not supported', 'error');
+                return;
+            }
+            
+            try {
+                const registration = await navigator.serviceWorker.ready;
+                
+                if (registration) {
+                    await registration.showNotification('🧪 Test SW Notification', {
+                        body: 'This is a test notification from service worker',
+                        icon: '/favicon.ico',
+                        badge: '/favicon.ico',
+                        tag: 'test-sw-notification',
+                        requireInteraction: true,
+                        silent: false,
+                        data: { test: true }
+                    });
+                    
+                    log('✅ Service Worker notification shown', 'success');
+                } else {
+                    log('❌ Service Worker not ready', 'error');
+                }
+            } catch (error) {
+                log(`❌ Service Worker notification failed: ${error}`, 'error');
+            }
+        }
+
+        // Auto-run basic checks on page load
+        window.addEventListener('load', () => {
+            log('🚀 FCM Debug Helper loaded', 'info');
+            checkBrowserSupport();
+            checkNotificationPermission();
+        });
+    </script>
+</body>
+</html>
