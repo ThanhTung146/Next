@@ -3,7 +3,7 @@ importScripts('https://www.gstatic.com/firebasejs/10.12.1/firebase-app-compat.js
 importScripts('https://www.gstatic.com/firebasejs/10.12.1/firebase-messaging-compat.js');
 
 firebase.initializeApp({
-    apiKey: "AIzaSyCAeDjVBVQAG6s-K02OcX9CQAbM2qfI_Ik",
+    apiKey: "api_Key",
     authDomain: "online-learning-f9d31.firebaseapp.com",
     projectId: "online-learning-f9d31",
     storageBucket: "online-learning-f9d31.firebasestorage.app",
